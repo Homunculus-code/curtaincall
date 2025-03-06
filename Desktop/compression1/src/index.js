@@ -1,4 +1,3 @@
-import Compressor from "compressorjs";
 
 const imageInput = document.getElementById("imageInput");
 const compressBtn = document.getElementById("compressBtn");
@@ -6,7 +5,6 @@ const originalSizeText = document.getElementById("originalSize");
 const compressedSizeText = document.getElementById("compressedSize");
 const sizeReductionText = document.getElementById("sizeReduction");
 const downloadLink = document.getElementById("downloadLink");
-const uploadProgress = document.getElementById("uploadProgress");
 const statusMessage = document.getElementById("statusMessage");
 
 let selectedFile = null;
@@ -40,7 +38,7 @@ compressBtn.addEventListener("click", function () {
     statusMessage.textContent = "Compressing image...";
 
     new Compressor(selectedFile, {
-        quality: 0.6,
+        quality: 1.0,
         maxWidth: 800,
         success(compressedFile) {
             const originalSizeKB = selectedFile.size / 1024;
@@ -65,23 +63,26 @@ function uploadImage(file) {
     formData.append("image", file);
 
     uploadProgress.style.display = "block";
-    uploadProgress.value = 0; // Reset progress
+    uploadProgress.value = 0;
 
-    fetch("http://compression1.vercel.app/upload", {
+    fetch("https://compressionapp.onrender.com/upload", {
         method: "POST",
         body: formData,
     })
     .then(response => response.json())
     .then(data => {
         if (data.success && data.path) {
-            statusMessage.textContent = "Upload successful!";
-
-            // Prevent caching issues
             const timestamp = new Date().getTime();
             downloadLink.href = data.path + "?t=" + timestamp;
             downloadLink.download = `compressed-${timestamp}.webp`;
 
-            downloadLink.style.display = "block"; // Show the download link
+            compressedSizeText.textContent = (data.compressedSize / 1024).toFixed(2) + " KB";
+            sizeReductionText.textContent = data.sizeReduction + "%";
+            
+            document.getElementById("ssimScore").textContent = `SSIM: ${data.ssim}`;
+            document.getElementById("psnrScore").textContent = `PSNR: ${data.psnr} dB`;
+
+            downloadLink.style.display = "block";
         } else {
             throw new Error(data.error || "Upload failed");
         }
@@ -91,6 +92,6 @@ function uploadImage(file) {
         statusMessage.textContent = "Upload failed. Try again.";
     })
     .finally(() => {
-        uploadProgress.style.display = "none"; // Hide progress bar
+        statusMessage.textContent = "Uploaded!";
     });
 }
